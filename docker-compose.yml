@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  server:
+    container_name: file_storage
+    build: ./dockerization
+    restart: always
+    command: >
+      sh -c "cd app &&
+             alembic upgrade head &&
+             cd .. &&
+             uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000"
+    volumes:
+      - ./:/app/
+    env_file:
+      - ./.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: menu_db
+    image: postgres:15.1-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
+      interval: 1s
+      timeout: 3s
+      retries: 10
+
+volumes:
+    postgres_data:
