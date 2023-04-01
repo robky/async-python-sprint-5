@@ -12,7 +12,7 @@ from schemas.user_schema import TokenData, UserInDB
 from services.file_storage_crud import user_crud
 from services.hash_pwd import verify_password
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/user/auth")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/user/auth-form")
 
 
 async def authenticate_user(user: UserInDB, password: str):
