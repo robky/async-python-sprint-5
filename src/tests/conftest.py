@@ -5,6 +5,7 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from core.sqlalhemy_utils_async import database_exists, create_database
 from db.database import Base, engine
 from main import app
 
@@ -17,10 +18,14 @@ async def async_client():
 
 @pytest_asyncio.fixture(scope="function")
 async def async_session() -> AsyncSession:
+    if not await database_exists(engine.url):
+        await create_database(engine.url)
     session = async_sessionmaker(engine, expire_on_commit=False)
 
     async with session():
+
         async with engine.begin() as connect:
+
             await connect.run_sync(Base.metadata.create_all)
 
         yield session

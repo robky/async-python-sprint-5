@@ -2,26 +2,24 @@ version: '3.8'
 
 services:
   server:
-    container_name: file_storage
-    build: ./dockerization
+    container_name: file_storage_server
+    build: .
     restart: always
     command: >
       sh -c "cd app &&
+             mkdir -p static &&
              alembic upgrade head &&
-             cd .. &&
-             uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000"
-    volumes:
-      - ./:/app/
+             uvicorn main:app --reload --workers 1 --host 0.0.0.0 --port 8000"
     env_file:
       - ./.env
     ports:
-      - "8000:8000"
+      - "8080:8000"
     depends_on:
       db:
         condition: service_healthy
 
   db:
-    container_name: menu_db
+    container_name: file_storage_db
     image: postgres:15.1-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data/
