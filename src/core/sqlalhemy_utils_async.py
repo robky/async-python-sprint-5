@@ -1,19 +1,22 @@
+from typing import Any
+
 import sqlalchemy as sa
+from sqlalchemy import URL, TextClause
 from sqlalchemy.exc import OperationalError, ProgrammingError
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy_utils.functions.database import _set_url_database, make_url
 from sqlalchemy_utils.functions.orm import quote
 
 
-async def _get_scalar_result(engine, sql):
+async def _get_scalar_result(engine: AsyncEngine, sql: TextClause) -> Any:
     try:
         async with engine.connect() as conn:
             return await conn.scalar(sql)
-    except Exception as e:
+    except Exception:
         return False
 
 
-async def database_exists(url):
+async def database_exists(url: URL) -> bool:
     url = make_url(url)
     database = url.database
     engine = None
@@ -23,8 +26,7 @@ async def database_exists(url):
             url = _set_url_database(url, database=db)
             engine = create_async_engine(url)
             try:
-                return bool(
-                    await _get_scalar_result(engine, sa.text(text)))
+                return bool(await _get_scalar_result(engine, sa.text(text)))
             except (ProgrammingError, OperationalError):
                 pass
             return False
@@ -33,7 +35,9 @@ async def database_exists(url):
             await engine.dispose()
 
 
-async def create_database(url, encoding="utf8", template=None):
+async def create_database(
+    url: URL, encoding: str = "utf8", template: str | None = None
+) -> None:
     url = make_url(url)
     database = url.database
     dialect_driver = url.get_dialect().driver

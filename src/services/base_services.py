@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import Any, Generic, Type, TypeVar
 
+from aiofiles import open
 from asyncpg.exceptions import UniqueViolationError
 from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
@@ -8,7 +9,6 @@ from pydantic import BaseModel
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from aiofiles import open
 
 from db.database import Base
 
@@ -49,8 +49,12 @@ class RepositoryDB(
         return True
 
     async def assembly_before_creation(
-            self, db: AsyncSession, in_file: UploadFile, path: str,
-            author_id: int, in_folder: str
+        self,
+        db: AsyncSession,
+        in_file: UploadFile,
+        path: str,
+        author_id: int,
+        in_folder: str,
     ) -> ModelType | None:
         file_obj_in = {
             "name": in_file.filename,
@@ -85,14 +89,16 @@ class RepositoryDB(
         results = await db.execute(statement=statement)
         return results.scalars().all()
 
-    async def get_files_by_user(self, db: AsyncSession, user_id: int):
+    async def get_files_by_user(
+        self, db: AsyncSession, user_id: int
+    ) -> list[ModelType]:
         statement = select(self._model).where(self._model.author_id == user_id)
         results = await db.execute(statement=statement)
         return results.scalars().all()
 
     async def get_id_by_id_and_user(
         self, db: AsyncSession, id: str, user_id: int
-    ):
+    ) -> ModelType | None:
         statement = select(self._model).where(
             (self._model.id == id) & (self._model.author_id == user_id)
         )
@@ -101,7 +107,7 @@ class RepositoryDB(
 
     async def get_id_by_path_and_user(
         self, db: AsyncSession, path: str, user_id: int
-    ):
+    ) -> ModelType | None:
         statement = select(self._model).where(
             (self._model.path == path) & (self._model.author_id == user_id)
         )

@@ -16,7 +16,7 @@ from services.file_storage_crud import user_crud
 user_router = APIRouter()
 
 
-async def get_token(db: AsyncSession, username: str, password: str):
+async def get_token(db: AsyncSession, username: str, password: str) -> Any:
     verify_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Incorrect username or password",
@@ -44,10 +44,9 @@ async def get_token(db: AsyncSession, username: str, password: str):
     description="Create new user.",
 )
 async def create_user(
-    *,
-    db: AsyncSession = Depends(get_session),
     link_in: user_schema.UserCreate,
-) -> Any:
+    db: AsyncSession = Depends(get_session),
+):
     return await user_crud.create(db, obj_in=link_in)
 
 

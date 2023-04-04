@@ -8,18 +8,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.config import app_settings
 from db.database import get_session
-from schemas.user_schema import TokenData, UserInDB
+from schemas.user_schema import TokenData, UserId, UserInDB
 from services.file_storage_crud import user_crud
 from services.hash_pwd import verify_password
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/user/auth-form")
 
 
-async def authenticate_user(user: UserInDB, password: str):
+async def authenticate_user(user: UserInDB, password: str) -> bool:
     return verify_password(password, user.password)
 
 
-async def create_access_token(data: dict, expires_delta: timedelta):
+async def create_access_token(data: dict, expires_delta: timedelta) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
@@ -31,7 +31,7 @@ async def create_access_token(data: dict, expires_delta: timedelta):
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: AsyncSession = Depends(get_session),
-):
+) -> UserId:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

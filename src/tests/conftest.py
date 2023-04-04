@@ -5,13 +5,13 @@ import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from core.sqlalhemy_utils_async import database_exists, create_database
+from core.sqlalhemy_utils_async import create_database, database_exists
 from db.database import Base, engine
 from main import app
 
 
 @pytest_asyncio.fixture
-async def async_client():
+async def async_client() -> AsyncClient:
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
 
