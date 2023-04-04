@@ -2,12 +2,13 @@ from abc import ABC
 from typing import Any, Generic, Type, TypeVar
 
 from asyncpg.exceptions import UniqueViolationError
-from fastapi import HTTPException, status
+from fastapi import UploadFile
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from aiofiles import open
 
 from db.database import Base
 
@@ -46,6 +47,24 @@ class RepositoryDB(
         except Exception:
             return False
         return True
+
+    async def assembly_before_creation(
+            self, db: AsyncSession, in_file: UploadFile, path: str,
+            author_id: int, in_folder: str
+    ) -> ModelType | None:
+        file_obj_in = {
+            "name": in_file.filename,
+            "path": path,
+            "size": in_file.size,
+            "author_id": author_id,
+        }
+        result = await self.create(db, obj_in=file_obj_in)
+        if result is None:
+            return None
+        async with open(in_folder + str(result.id), "wb") as out_file:
+            while content := await in_file.read(1024):
+                await out_file.write(content)
+        return result
 
     async def get(self, db: AsyncSession, id: int | str) -> ModelType | None:
         statement = select(self._model).where(self._model.id == id)
@@ -91,7 +110,7 @@ class RepositoryDB(
 
     async def create(
         self, db: AsyncSession, *, obj_in: CreateSchemaType
-    ) -> ModelType:
+    ) -> ModelType | None:
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self._model(**obj_in_data)
         db.add(db_obj)
@@ -99,10 +118,7 @@ class RepositoryDB(
             await db.commit()
         except IntegrityError as e:
             if e.orig.__cause__.__class__ == UniqueViolationError:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="This value is already exist",
-                )
+                return None
         await db.refresh(db_obj)
         return db_obj
 
@@ -133,5 +149,3 @@ class RepositoryDB(
         statement = delete(self._model).where(self._model.id == db_obj.id)
         await db.execute(statement=statement)
         await db.commit()
-        await db.refresh(db_obj)
-        return db_obj

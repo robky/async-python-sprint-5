@@ -16,9 +16,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/user/auth-form")
 
 
 async def authenticate_user(user: UserInDB, password: str):
-    if not verify_password(password, user.password):
-        return False
-    return True
+    return verify_password(password, user.password)
 
 
 async def create_access_token(data: dict, expires_delta: timedelta):
@@ -43,12 +41,14 @@ async def get_current_user(
         payload = jwt.decode(
             token, app_settings.secret_key, algorithms=[app_settings.algorithm]
         )
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
+
+    username: str = payload.get("sub")
+    if username is None:
+        raise credentials_exception
+    token_data = TokenData(username=username)
+
     user = await user_crud.get_by_name(db, token_data.username)
     if user is None:
         raise credentials_exception

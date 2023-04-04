@@ -17,9 +17,6 @@ class DBSettings(BaseSettings):
         env_file = dotenv_path
 
 
-db_set = DBSettings()
-
-
 class AppSettings(BaseSettings):
     project_name: str = "FileStorage"
     project_host: str = "127.0.0.1"
@@ -29,6 +26,7 @@ class AppSettings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
+    db_set: DBSettings = DBSettings()
     database_dsn: PostgresDsn = parse_obj_as(
         PostgresDsn,
         f"postgresql+asyncpg://{db_set.postgres_user}:"

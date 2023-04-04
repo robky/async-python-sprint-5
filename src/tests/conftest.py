@@ -16,41 +16,37 @@ async def async_client():
         yield client
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture
 async def async_session() -> AsyncSession:
     if not await database_exists(engine.url):
         await create_database(engine.url)
     session = async_sessionmaker(engine, expire_on_commit=False)
-
     async with session():
-
         async with engine.begin() as connect:
-
             await connect.run_sync(Base.metadata.create_all)
 
         yield session
 
     async with engine.begin() as connect:
         await connect.run_sync(Base.metadata.drop_all)
-
     await engine.dispose()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def prefix_file_url() -> str:
     return "/api/v1/files"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def prefix_user_url() -> str:
     return "/api/v1/user"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def user_test_data() -> dict:
     return {"name": "test_user", "password": "my_secret_password"}
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def test_file() -> Path:
     return Path("tests/test-file.txt")
